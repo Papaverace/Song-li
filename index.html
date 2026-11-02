@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trò chơi Sóng Lí 11</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=vietnamese">
+<style>
+:root { color-scheme: dark; --bg: #17120f; --cream: #f6ead4; --soft: #dccbb2; --gold: #f0c15a; --red: #cf2f26; --red-d: #8f1c17; --kraft: #c8a06a; --kraft-d: #94703f; --text: #1f1712; --serif: "Times New Roman", Tinos, Times, serif }
+* { box-sizing: border-box }
+html, body { height: 100% }
+body { margin: 0; font-family: var(--serif); font-size: 19px; color: var(--cream); background: var(--bg) }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(23, 18, 15, .68), rgba(23, 18, 15, .76)), url("may-gacha-cau-hoi/img/sky.jpg") center / cover no-repeat }
+main { min-height: 100%; display: grid; align-content: center; gap: 26px; width: min(960px, 100%); margin: 0 auto; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1 { margin: 0; font-size: clamp(36px, 6vw, 64px); font-style: italic; line-height: 1.05; color: var(--gold); text-wrap: balance }
+header p { margin: 8px 0 0; color: var(--soft) }
+.games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+.game { display: flex; flex-direction: column; gap: 8px; min-height: 220px; padding: 20px; text-decoration: none; color: var(--cream); border-radius: 8px; transition: transform .12s }
+.game:hover { transform: translateY(-3px) }
+.game:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px }
+.game h2 { margin: 0; font-size: clamp(28px, 3.6vw, 40px); line-height: 1.1 }
+.game p { margin: 0; flex: 1 }
+.game b { font-size: 22px }
+.gacha { background: linear-gradient(180deg, var(--red), var(--red-d)) }
+.gacha h2 { font-style: italic; color: var(--gold) }
+.cho { background: linear-gradient(150deg, #d7b27e, var(--kraft) 55%, var(--kraft-d)); color: var(--text) }
+@media (max-width: 640px) { .games { grid-template-columns: minmax(0, 1fr) } .game { min-height: 0 } }
+@media (prefers-reduced-motion: reduce) { .game { transition: none } .game:hover { transform: none } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Trò chơi Sóng Lí 11</h1>
+    <p>Vật lí 11, Bài 9: Sóng ngang, sóng dọc và sự truyền năng lượng của sóng cơ</p>
+  </header>
+  <div class="games">
+    <a class="game gacha" href="may-gacha-cau-hoi/">
+      <h2>Máy Gacha Câu Hỏi</h2>
+      <p>Chơi giữa bài. Quay viên nang và ôn sóng ngang, sóng dọc.</p>
+      <b>Vào chơi</b>
+    </a>
+    <a class="game cho" href="cho-den-cau-hoi/">
+      <h2>Chợ Đen Câu Hỏi</h2>
+      <p>Chơi cuối bài. Đấu giá gói bí ẩn và tổng kết cả 4 phần.</p>
+      <b>Vào chơi</b>
+    </a>
+  </div>
+</main>
+</body>
+</html>
