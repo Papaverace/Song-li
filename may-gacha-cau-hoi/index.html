@@ -1,0 +1,920 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Máy Gacha Câu Hỏi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=vietnamese">
+<style>
+/* Layout: bầu trời Đêm đầy sao làm nền, gashapon xanh cô-ban ở giữa sân khấu, cửa kính là hai hàng viên nang chạy sóng ngang và sóng dọc; bảng điểm bên trái, tỉ lệ rơi bên phải. */
+:root {
+  color-scheme: dark;
+  --ink: #0a1c4c; --ink-2: #14317a; --line: #4369b8;
+  --paper: #fdf3c9; --paper-2: #f2dd97; --text: #0e1f45; --soft: #b3cbf0;
+  --sky: #1f55ad; --sky-d: #0c2768; --gold: #f6c531; --gold-d: #b5860d;
+  --common: #3fae9a; --rare: #4a9be8; --epic: #9b7bea; --legendary: #f6c531; --trap: #4a5a52; --mystery: #f2913a;
+  --ok: #1d8a4e; --bad: #c62a22;
+  --serif: "Times New Roman", Tinos, Times, serif;
+}
+* { box-sizing: border-box }
+html, body { height: 100% }
+body { background: var(--ink); color: var(--paper); font-family: var(--serif); font-size: 18px; line-height: 1.35 }
+button, input { font: inherit }
+button { cursor: pointer; color: inherit }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px }
+#app { min-height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+.top p { margin: 0; color: var(--paper); font-style: italic }
+.tools { display: flex; gap: 8px; flex-wrap: wrap }
+.tool { background: transparent; border: 1px solid var(--line); color: var(--paper); padding: 5px 12px; border-radius: 4px }
+.tool:hover { border-color: var(--soft) }
+.stage { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(0, 2.5fr) minmax(230px, 1fr); gap: 14px; min-height: 0 }
+.side { min-width: 0; display: flex; flex-direction: column; gap: 10px }
+.side h2 { margin: 0; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--soft); font-weight: 700 }
+
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: linear-gradient(rgba(10, 28, 76, .28), rgba(10, 28, 76, .42)), url(img/sky.jpg) center / cover no-repeat }
+.side { background: rgba(10, 28, 76, .86); border-radius: 10px; padding: 12px }
+.top { background: rgba(10, 28, 76, .78); border-radius: 8px; padding: 6px 12px }
+
+/* Máy */
+.machine { min-width: 0; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(180deg, var(--sky), var(--sky-d)); border-radius: 22px 22px 10px 10px; padding: 12px 16px 14px; box-shadow: inset 0 3px 0 rgba(255,255,255,.25), inset 0 -6px 0 rgba(0,0,0,.25) }
+.machine h1 { margin: 0; text-align: center; font-size: clamp(30px, 4.6vw, 58px); line-height: 1; font-weight: 700; font-style: italic; color: var(--gold); text-shadow: 0 3px 0 var(--sky-d), 0 5px 0 rgba(0,0,0,.35); text-wrap: balance }
+.glass { position: relative; flex: 1; min-height: 240px; background: #071540; border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 0 5px var(--gold), inset 0 0 30px rgba(0,0,0,.7) }
+.glass canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
+.ctrl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center }
+.turn { min-width: 0 }
+.turn small { display: block; letter-spacing: .12em; text-transform: uppercase; font-size: 14px; color: var(--paper-2) }
+.turn b { display: block; font-size: clamp(24px, 3vw, 38px); line-height: 1.1; overflow-wrap: anywhere }
+.spin { border: 0; border-radius: 50%; width: 112px; height: 112px; background: radial-gradient(circle at 35% 30%, #fff0a6, var(--gold) 55%, var(--gold-d)); color: var(--text); font-weight: 700; font-size: 26px; box-shadow: 0 7px 0 #6e5000, 0 10px 16px rgba(0,0,0,.45); transition: transform .08s, box-shadow .08s }
+.spin:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 2px 0 #6e5000 }
+.spin:disabled { filter: grayscale(.8) brightness(.7); cursor: not-allowed }
+
+/* Đội */
+.teams { display: flex; flex-direction: column; gap: 8px }
+.team { background: var(--ink-2); border: 2px solid transparent; border-radius: 8px; padding: 8px 10px; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: center }
+.team.on { border-color: var(--gold); background: #1e49a3 }
+.team.out { opacity: .72 }
+.team .nm { font-weight: 700; font-size: 19px; overflow-wrap: anywhere; background: none; border: 0; padding: 0; text-align: left; color: inherit; text-decoration: underline dotted var(--soft); text-underline-offset: 3px }
+.team .sc { font-size: 36px; font-weight: 700; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; grid-row: span 2; text-align: right }
+.pips { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; min-height: 18px; font-size: 14px; color: var(--soft) }
+.pip { width: 13px; height: 13px; border-radius: 50%; background: linear-gradient(var(--gold) 50%, var(--paper) 50%) }
+.buff { background: var(--paper); color: var(--text); padding: 0 6px; border-radius: 3px; font-size: 13px; font-weight: 700 }
+.adj { grid-column: 1 / -1; display: none; gap: 6px; margin-top: 5px }
+.team:hover .adj, .team:focus-within .adj { display: flex }
+@media (hover: none) { .adj { display: flex } }
+.adj button { background: transparent; border: 1px solid var(--line); color: var(--paper); border-radius: 3px; padding: 0 10px; font-size: 15px }
+
+/* Tỉ lệ */
+.rates { width: 100%; border-collapse: collapse; font-size: 17px; font-variant-numeric: tabular-nums }
+.rates td { padding: 4px 0; border-bottom: 1px solid var(--line) }
+.rates td:first-child, .rates td:nth-child(3) { white-space: nowrap }
+.rates td:nth-child(2), .rates td:nth-child(3) { text-align: right; padding-left: 8px }
+.dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; background: linear-gradient(var(--c) 50%, var(--paper) 50%) }
+.note { color: var(--soft); font-size: 15px; margin: 0 }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 15px; color: var(--paper-2) }
+
+/* Lớp phủ */
+.ov { position: fixed; inset: 0; z-index: 20; display: grid; place-items: safe center; background: rgba(6, 14, 44, .86); transition: background .5s; padding-block: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: auto }
+.panel { width: min(1060px, 100%); background: var(--paper); color: var(--text); border-radius: 10px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.6) }
+.ph { background: var(--t); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; flex-wrap: wrap }
+.ph.dk { color: var(--text) }
+.ph b { font-size: 24px; letter-spacing: .05em }
+.time { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums }
+.tbar { height: 8px; background: var(--paper-2) }
+.tbar i { display: block; height: 100%; width: 100%; background: var(--t); transform-origin: left }
+.body { padding: 16px 22px 20px; display: flex; flex-direction: column; gap: 12px }
+.q { margin: 0; font-size: clamp(23px, 3vw, 36px); font-weight: 700; line-height: 1.22 }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px }
+@media (max-width: 720px) { .opts { grid-template-columns: 1fr } }
+.opt { text-align: left; background: #fff; color: var(--text); border: 2px solid #c9bb98; border-radius: 6px; padding: 9px 12px; font-size: clamp(19px, 2.2vw, 26px); display: flex; gap: 10px; min-width: 0 }
+.opt span { min-width: 0 }
+.opt b { flex: none }
+.opt:hover:not(:disabled) { border-color: var(--text) }
+.opt:disabled { cursor: default; color: var(--text) }
+.opt.pick { border-color: var(--gold-d); background: #fff1bd; animation: pulse .3s infinite alternate }
+.opt.right { background: var(--ok); border-color: var(--ok); color: #fff; animation: none }
+.opt.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: none }
+.opt.dim { opacity: .55 }
+@keyframes pulse { to { transform: scale(1.012) } }
+.after { display: flex; flex-direction: column; gap: 5px; font-size: 21px; border-top: 2px solid #d9cba8; padding-top: 9px }
+.after h3 { margin: 0; font-size: clamp(24px, 3vw, 32px) }
+.after h3.yes { color: var(--ok) } .after h3.no { color: var(--bad) }
+.after p { margin: 0 }
+.after .mc { font-style: italic; color: #52626a }
+.row { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap }
+.go { background: var(--text); color: var(--paper); border: 0; border-radius: 6px; padding: 9px 22px; font-size: 21px; font-weight: 700 }
+.go.ghost { background: transparent; color: var(--text); border: 1px solid #a99c7c; font-weight: 400; font-size: 17px }
+.reveal { --t: #fff; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; color: var(--paper); width: min(860px, 100%) }
+.cell { position: relative; width: min(38vh, 62vw, 300px); aspect-ratio: 1; max-width: 100%; flex: none }
+.rays { position: absolute; inset: -12%; border-radius: 50%; opacity: 0; background: repeating-conic-gradient(var(--t) 0 9deg, transparent 9deg 24deg); -webkit-mask: radial-gradient(closest-side, #000 28%, transparent); mask: radial-gradient(closest-side, #000 28%, transparent) }
+.char { position: absolute; inset: 0; visibility: hidden }
+.char img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 7px solid var(--t); box-shadow: 0 0 0 4px var(--text), 0 10px 34px rgba(0,0,0,.55) }
+.cell.open .char img { animation: drift 2.4s ease-in-out .7s infinite alternate }
+.cell.trap .char img { filter: grayscale(1) contrast(1.12) }
+.cell.legendary .char::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 5px solid var(--t); animation: ring 1.8s ease-out infinite }
+@keyframes drift { from { transform: translateY(-5px) } to { transform: translateY(5px) } }
+@keyframes ring { from { transform: scale(1); opacity: .9 } to { transform: scale(1.3); opacity: 0 } }
+.cell.open .rays { opacity: .5; transition: opacity .4s; animation: turn 18s linear infinite }
+.cell.open .char { visibility: visible; animation: rise .62s cubic-bezier(.2, 1.5, .4, 1) both }
+@keyframes turn { to { transform: rotate(360deg) } }
+@keyframes rise { from { transform: translateY(16%) scale(.14) } to { transform: none } }
+.who { display: flex; flex-direction: column; align-items: center; gap: 6px; visibility: hidden; opacity: 0; width: 100% }
+.who.on { visibility: visible; opacity: 1; transition: opacity .35s .3s }
+.tag { background: var(--t); color: var(--tx, #fff); padding: 1px 14px; border-radius: 3px; font-size: 19px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+.reveal h2 { margin: 0; font-size: clamp(38px, min(6.5vw, 9vh), 74px); line-height: 1.05; font-style: italic; text-wrap: balance }
+.reveal p { margin: 0; font-size: clamp(20px, 2.4vw, 27px); max-width: 44ch; text-wrap: balance }
+.reveal .quip { font-style: italic; color: var(--paper-2) }
+#rvB { margin-top: 6px; min-height: 48px }
+.reveal .go { background: var(--gold); color: var(--text) }
+.powers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px }
+.power { text-align: left; background: #fff; border: 2px solid var(--gold-d); border-radius: 8px; padding: 12px; color: var(--text) }
+.power:hover { background: #fff1bd }
+.power b { display: block; font-size: 24px } .power span { display: block; font-size: 18px; margin-top: 3px }
+.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px }
+.rank li { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 25px; border-bottom: 1px solid #d9cba8; padding-bottom: 5px }
+.rank li:first-child { font-size: 34px; font-weight: 700 }
+.rank em { display: block; font-size: 18px; color: #52626a; font-weight: 400 }
+.rank .sc { font-variant-numeric: tabular-nums; font-weight: 700 }
+.set label { display: flex; gap: 8px; align-items: center; font-size: 19px }
+.set input[type=text] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid #a99c7c; border-radius: 4px; background: #fff; color: var(--text) }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 19px }
+.chip { background: #fff; color: var(--text); border: 1px solid #a99c7c; border-radius: 4px; padding: 3px 13px }
+.chip[aria-pressed=true] { background: var(--text); color: var(--paper) }
+details summary { cursor: pointer; font-size: 19px }
+.bank { max-height: 320px; overflow: auto; font-size: 17px; margin-top: 8px }
+.bank h4 { margin: 10px 0 3px; font-size: 18px }
+.bank p { margin: 0 0 6px }
+.bank i { color: var(--ok); font-style: normal; font-weight: 700 }
+.ov { overflow-x: hidden }
+.ov.drop { background: rgba(6, 14, 44, .32) }
+#orb { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30 }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40 }
+@media (max-width: 980px) {
+  .stage { grid-template-columns: minmax(0, 1fr) }
+  .machine { order: -1 }
+  .spin { width: 92px; height: 92px; font-size: 22px }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opt.pick, .cell.open .rays, .cell.open .char, .cell.open .char img, .cell.legendary .char::after { animation: none }
+}
+</style>
+
+<div id="app">
+  <div class="top">
+    <p>Vật lí 11, Bài 9: Sóng ngang và sóng dọc</p>
+    <div class="tools">
+      <button class="tool" id="btnSound" type="button">Âm thanh: bật</button>
+      <button class="tool" id="btnFull" type="button">Toàn màn hình</button>
+      <button class="tool" id="btnRename" type="button">Đổi tên đội</button>
+      <button class="tool" id="btnSet" type="button">Thiết lập</button>
+    </div>
+  </div>
+  <div class="stage">
+    <section class="side" aria-label="Bảng điểm">
+      <h2>Bảng điểm</h2>
+      <div class="teams" id="teams"></div>
+    </section>
+    <section class="machine">
+      <h1>Máy Gacha Câu Hỏi</h1>
+      <div class="glass"><canvas id="wave" aria-label="Hai hàng viên nang minh hoạ sóng ngang và sóng dọc"></canvas></div>
+      <div class="ctrl">
+        <div class="turn" aria-live="polite"><small id="turnLabel">Đến lượt</small><b id="turnName"></b></div>
+        <button class="spin" id="btnSpin" type="button">QUAY</button>
+      </div>
+    </section>
+    <section class="side" aria-label="Tỉ lệ rơi">
+      <h2>Tỉ lệ rơi</h2>
+      <table class="rates"><tbody id="rates"></tbody></table>
+      <p class="note">Mỗi lượt không ra Legendary, tỉ lệ Legendary tăng thêm 3%, lấy từ Common.</p>
+      <h2>Vừa xảy ra</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+  </div>
+</div>
+<div class="ov" id="ov" hidden></div>
+<canvas id="orb" aria-hidden="true" hidden></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+/* ============ NGÂN HÀNG CÂU HỎI ============
+   Mỗi câu: [câu hỏi, [ĐÁP ÁN ĐÚNG, sai, sai, sai], giải thích]
+   Đáp án đúng luôn viết đầu tiên, khi chơi máy tự xáo thứ tự. */
+const BANK = {
+  common: [
+    ["Trong sóng ngang, phần tử môi trường dao động theo phương nào so với phương truyền sóng?", ["Vuông góc", "Trùng nhau", "Hợp góc 45°", "Không xác định được"], "Đây là định nghĩa của sóng ngang."],
+    ["Trong sóng dọc, phần tử môi trường dao động theo phương nào so với phương truyền sóng?", ["Trùng nhau", "Vuông góc", "Luôn thẳng đứng", "Hợp góc 45°"], "Đây là định nghĩa của sóng dọc."],
+    ["Ví dụ nào là sóng ngang?", ["Sóng trên dây đàn guitar", "Sóng âm trong không khí", "Sóng nén – dãn trên lò xo", "Sóng âm phát ra từ loa"], "Dây đàn dao động vuông góc với sợi dây. Ba ví dụ còn lại là sóng dọc."],
+    ["Sóng nén – dãn chạy dọc theo lò xo là loại sóng nào?", ["Sóng dọc", "Sóng ngang", "Sóng ánh sáng", "Sóng mặt biển"], "Các vòng lò xo dao động theo đúng phương truyền sóng."],
+    ["Sóng âm truyền trong không khí là loại sóng nào?", ["Sóng dọc", "Sóng ngang", "Sóng điện từ", "Sóng ánh sáng"], "Phân tử khí dao động tiến – lùi theo phương truyền âm."],
+    ["Dựa vào đâu để phân biệt sóng ngang và sóng dọc?", ["Phương dao động so với phương truyền sóng", "Tốc độ truyền sóng", "Biên độ sóng", "Tần số của nguồn"], "Hai loại sóng được phân biệt bằng phương dao động của phần tử."],
+    ["Có sóng dọc truyền trên lò xo, ta thấy gì?", ["Vùng nén và vùng dãn xen kẽ lan dọc lò xo", "Lò xo uốn lên – xuống", "Cả lò xo trượt về phía trước", "Lò xo quay quanh trục"], "Sóng dọc tạo các vùng nén và vùng dãn lan dọc lò xo."],
+    ["Sóng truyền từ trái sang phải trên sợi dây căng ngang. Một điểm trên dây chuyển động thế nào?", ["Dao động lên – xuống", "Chạy sang phải cùng sóng", "Chạy sang trái", "Đứng yên hoàn toàn"], "Điểm trên dây dao động vuông góc với phương truyền sóng."],
+    ["Khi có sóng truyền qua, các phần tử môi trường dao động quanh đâu?", ["Vị trí cân bằng của chúng", "Nguồn sóng", "Đỉnh sóng", "Điểm cuối môi trường"], "Mỗi phần tử chỉ dao động quanh vị trí cân bằng của nó."],
+    ["Muốn tạo sóng dọc trên lò xo, tay phải làm gì?", ["Đẩy và kéo dọc theo trục lò xo", "Lắc lên – xuống vuông góc với lò xo", "Xoay lò xo quanh trục", "Giữ yên lò xo"], "Tay dao động dọc trục lò xo nên phương dao động trùng phương truyền."],
+    ["Muốn tạo sóng ngang trên một sợi dây dài, tay phải làm gì?", ["Lắc đầu dây vuông góc với sợi dây", "Kéo dây dọc theo chiều dài", "Buông dây ra", "Cuộn dây lại"], "Lắc vuông góc với dây tạo ra sóng ngang."],
+    ["Khi sóng lan trên mặt nước, cái gì đi ra xa nguồn?", ["Đỉnh sóng, tức trạng thái dao động", "Các giọt nước gần nguồn", "Toàn bộ khối nước", "Không có gì đi ra xa"], "Giọt nước nhấp nhô tại chỗ, còn trạng thái dao động lan ra xa."],
+  ],
+  rare: [
+    ["Bạn giật đầu dây một cái, một chỗ nhô chạy tới đầu kia. Cái gì đã thực sự đi hết sợi dây?", ["Trạng thái dao động và năng lượng", "Các phần tử dây ở đầu tay bạn", "Bàn tay của bạn", "Khối lượng của sợi dây"], "Phần tử dây ở lại, thứ đi tiếp là trạng thái dao động và năng lượng."],
+    ["Dán một miếng băng dính lên dây rồi cho sóng chạy qua. Miếng băng dính làm gì?", ["Lên rồi xuống, sau đó về chỗ cũ", "Chạy theo sóng đến cuối dây", "Bị đẩy lùi về phía tay", "Không nhúc nhích"], "Sóng đi qua, phần tử dây chỉ dao động quanh vị trí cân bằng."],
+    ["Mặt hồ không có dòng chảy, sóng lăn tăn đi qua. Vì sao phao câu cá gần như không trôi theo sóng?", ["Sóng truyền dao động, không mang nước đi theo", "Phao quá nặng", "Sóng không có năng lượng", "Cá đang giữ phao lại"], "Sóng mang năng lượng đi xa mà không mang phần tử nước đi cùng. Cá vô can."],
+    ["Khán giả tạo làn sóng trên khán đài: mỗi người đứng lên rồi ngồi xuống, làn sóng chạy quanh sân. Mô hình này giống gì?", ["Sóng ngang", "Sóng dọc", "Sóng âm", "Không giống sóng nào"], "Người dao động lên – xuống, làn sóng chạy theo phương ngang, hai phương vuông góc."],
+    ["Một hàng người xếp nối đuôi, người sau đẩy nhẹ lưng người trước rồi lùi lại, cú đẩy chạy dọc hàng. Mô hình này giống gì?", ["Sóng dọc", "Sóng ngang", "Sóng ánh sáng", "Sóng mặt biển"], "Mỗi người dịch tới – lui theo đúng hướng cú đẩy truyền đi."],
+    ["Bạn nghe nhạc cách loa 3 m. Phân tử không khí sát màng loa làm gì?", ["Dao động tiến – lùi quanh vị trí cân bằng", "Bay thẳng vào tai bạn", "Đứng yên hoàn toàn", "Bay ra xa rồi quay lại sau mỗi nốt"], "Phân tử khí không bay xa 3 m. Nó chỉ chuyền dao động cho lớp khí kế tiếp."],
+    ["Sóng S trong động đất làm đất rung vuông góc với phương truyền. Sóng S là loại nào?", ["Sóng ngang", "Sóng dọc", "Sóng âm", "Sóng điện từ"], "Phương dao động vuông góc phương truyền nên là sóng ngang."],
+    ["Sóng P trong động đất làm các lớp đất nén – dãn dọc hướng truyền. Sóng P là loại nào?", ["Sóng dọc", "Sóng ngang", "Sóng điện từ", "Sóng ánh sáng"], "Đất dao động theo phương truyền nên là sóng dọc."],
+    ["Sóng trên mặt biển có phải sóng ngang thuần tuý không?", ["Không, nó là tổng hợp của sóng ngang và sóng dọc", "Có, vì mặt nước nhấp nhô", "Có, vì mọi sóng nước đều là sóng ngang", "Không, nó là sóng dọc thuần tuý"], "Sóng biển là sóng phức tạp, tổng hợp cả hai thành phần."],
+    ["Trong sóng âm, vùng nén là nơi như thế nào?", ["Không khí dày hơn, áp suất cao hơn bình thường", "Không còn không khí", "Không khí loãng hơn bình thường", "Không khí đứng yên vĩnh viễn"], "Tại vùng nén, các lớp khí xích lại gần nhau nên mật độ và áp suất tăng."],
+    ["Ánh sáng là sóng điện từ. Xét phương dao động so với phương truyền, ánh sáng thuộc loại nào?", ["Sóng ngang", "Sóng dọc", "Sóng cơ", "Không có phương dao động"], "Điện trường và từ trường dao động vuông góc với phương truyền, nên ánh sáng là sóng ngang."],
+  ],
+  epic: [
+    ["Trên lò xo, hai vùng nén liên tiếp cách nhau 40 cm. Tay đẩy – kéo với tần số 5 Hz. Tốc độ truyền sóng là bao nhiêu?", ["2 m/s", "8 m/s", "200 m/s", "0,08 m/s"], "Hai vùng nén liên tiếp cách nhau λ = 0,4 m. v = λf = 0,4 × 5 = 2 m/s."],
+    ["Phao nhô lên đỉnh 5 lần liên tiếp, từ lần đầu đến lần cuối mất 8 s. Hai đỉnh sóng liên tiếp cách nhau 2 m. Tốc độ truyền sóng là bao nhiêu?", ["1 m/s", "1,25 m/s", "2 m/s", "4 m/s"], "5 lần nhô ứng với 4 chu kỳ nên T = 2 s. v = λ/T = 2/2 = 1 m/s. Bẫy kinh điển là đếm thành 5 chu kỳ."],
+    ["Trên dây, 5 đỉnh sóng liên tiếp trải dài 2 m. Nguồn dao động 4 Hz. Tốc độ truyền sóng là bao nhiêu?", ["2 m/s", "1,6 m/s", "8 m/s", "0,5 m/s"], "5 đỉnh tạo 4 bước sóng nên λ = 0,5 m. v = λf = 0,5 × 4 = 2 m/s."],
+    ["Lắc dây mạnh hơn, biên độ gấp đôi, tần số và lực căng giữ nguyên. Sóng có chạy nhanh gấp đôi không?", ["Không, tốc độ truyền phụ thuộc môi trường", "Có, biên độ gấp đôi thì tốc độ gấp đôi", "Có, nhưng chỉ với sóng ngang", "Không, sóng sẽ chậm đi một nửa"], "Biên độ tăng làm phần tử dao động nhanh hơn, còn tốc độ truyền sóng gần như không đổi."],
+    ["Hai điểm trên dây cách nhau đúng một bước sóng dao động thế nào với nhau?", ["Cùng pha", "Ngược pha", "Vuông pha", "Không liên quan nhau"], "Đi xa thêm một bước sóng, pha trễ thêm đúng 2π nên trạng thái dao động lặp lại."],
+    ["Sóng ngang chạy sang phải trên dây. Xét điểm nằm ngay bên phải một đỉnh sóng. Điểm đó đang chuyển động thế nào?", ["Đi lên", "Đi xuống", "Sang phải", "Đứng yên"], "Đỉnh sóng sắp chạy tới điểm đó, nên điểm phải đi lên để thành đỉnh."],
+    ["Sóng dọc không có gì uốn lên – xuống. Vì sao đồ thị sóng âm vẫn có dạng hình sin?", ["Trục tung biểu diễn độ dịch dọc hoặc áp suất, không phải độ cao", "Vì sóng âm thực chất là sóng ngang", "Vì không khí uốn lượn trong thực tế", "Vì đó là hình vẽ sai"], "Hình sin mô tả một đại lượng thay đổi theo vị trí. Nó không phải hình dạng của không khí."],
+    ["Trạm đo cách tâm chấn 60 km. Sóng P đi 6 km/s, sóng S đi 3 km/s. Sóng P đến trước sóng S bao lâu?", ["10 s", "20 s", "30 s", "5 s"], "Sóng P mất 10 s, sóng S mất 20 s. Chênh lệch 10 s. Đây là ý tưởng của cảnh báo động đất sớm."],
+    ["Phao chỉ nhấp nhô, vậy vì sao người lướt ván lại đi được rất xa trên sóng?", ["Người trượt xuống mặt dốc của sóng và nhận năng lượng từ sóng", "Sóng biển mang cả khối nước và người đi cùng tốc độ", "Ván lướt tự tạo ra năng lượng", "Vì người nhẹ hơn phao"], "Người lướt trượt liên tục trên sườn sóng. Điều đó không có nghĩa là nước đi cùng sóng."],
+  ],
+  legendary: [
+    ["Vì sao sóng ngang cơ không truyền được trong lòng chất khí và chất lỏng, còn sóng dọc thì được?", ["Chất lưu chống lại nén – dãn, nhưng không chống lại biến dạng trượt", "Phân tử chất lưu quá nặng để dao động", "Chất lưu không có năng lượng", "Sóng ngang chỉ truyền được trong chân không"], "Sóng ngang cần lực kéo phần tử bên cạnh theo phương vuông góc, tức lực chống trượt. Chất lưu gần như không có lực đó."],
+    ["Sóng P đi qua được lõi ngoài Trái Đất, còn sóng S thì không. Nhà khoa học suy ra điều gì?", ["Lõi ngoài ở thể lỏng", "Lõi ngoài là chân không", "Lõi ngoài cứng hơn lớp vỏ", "Lõi ngoài toàn là không khí"], "Sóng ngang không truyền trong lòng chất lỏng, còn sóng dọc thì có. Con người biết điều này mà chưa từng đào tới đó."],
+    ["Sóng dọc chạy trên lò xo. Vòng lò xo nằm đúng tâm vùng nén đang ở trạng thái nào?", ["Ở vị trí cân bằng, tốc độ lớn nhất, hướng theo chiều truyền sóng", "Ở vị trí lệch xa nhất, đang đứng yên", "Ở vị trí cân bằng và đứng yên", "Ở vị trí lệch xa nhất, tốc độ lớn nhất"], "Nén mạnh nhất là chỗ hai vòng hai bên tiến lại gần nhất. Khi đó vòng giữa ở vị trí cân bằng và đi cùng chiều sóng với tốc độ lớn nhất."],
+    ["Trên ảnh chụp sợi dây có sóng ngang, điểm nào đang dao động nhanh nhất và điểm nào đang dừng lại?", ["Nhanh nhất ở vị trí cân bằng, dừng lại ở đỉnh và đáy", "Nhanh nhất ở đỉnh, dừng lại ở đáy", "Nhanh nhất ở đỉnh và đáy, dừng lại ở vị trí cân bằng", "Mọi điểm luôn cùng tốc độ"], "Mỗi phần tử dao động điều hoà: tốc độ cực đại ở vị trí cân bằng và bằng 0 ở biên."],
+    ["Sóng trên dây có biên độ 2 cm, tần số 5 Hz, tốc độ truyền 6,28 m/s. Tốc độ truyền gấp mấy lần tốc độ dao động cực đại của phần tử dây?", ["10 lần", "1 lần", "100 lần", "3,14 lần"], "v phần tử cực đại = 2πfA = 2π × 5 × 0,02 ≈ 0,628 m/s. Tỉ số là 6,28 / 0,628 = 10."],
+    ["Cùng một lò xo: lắc ngang cho ra sóng ngang, đẩy dọc cho ra sóng dọc. Từ đó rút ra điều gì?", ["Loại sóng phụ thuộc phương dao động so với phương truyền, không chỉ phụ thuộc vật liệu", "Lò xo tự chọn loại sóng theo tâm trạng", "Lò xo chỉ truyền được sóng dọc", "Hai loại sóng thực ra giống hệt nhau"], "Cùng môi trường vẫn có thể có hai loại sóng, tuỳ cách phần tử dao động so với hướng truyền."],
+  ],
+};
+
+/* ============ CẤU HÌNH GAME ============ */
+const TIERS = {
+  common:    { name: "Common",    vi: "Câu dễ",        pts: 1,  time: 20, hex: "#3fae9a", mark: "1" },
+  rare:      { name: "Rare",      vi: "Câu trung bình", pts: 3,  time: 30, hex: "#4a9be8", mark: "3" },
+  epic:      { name: "Epic",      vi: "Câu khó",       pts: 5,  time: 40, hex: "#9b7bea", mark: "5" },
+  legendary: { name: "Legendary", vi: "Câu cực khó",   pts: 10, time: 60, hex: "#f6c531", mark: "10" },
+  trap:      { name: "Trap",      vi: "Mất lượt",      pts: 0,  time: 0,  hex: "#4a5a52", mark: "✕" },
+  mystery:   { name: "Mystery",   vi: "Phần thưởng bí ẩn", pts: 0, time: 30, hex: "#f2913a", mark: "?" },
+};
+/* Nhân vật theo độ hiếm. Muốn đổi tên hay câu thoại thì sửa ngay ở đây. */
+const CHARS = {
+  common: [
+    { id: "kise", name: "Kise Ryota", quip: "Bắt chước mọi chiêu, y như sóng lặp lại sau mỗi chu kì." },
+    { id: "kageyama", name: "Kageyama", quip: "Chuyền bóng chuẩn tới từng bước sóng." },
+    { id: "toctim", name: "Lady Nagant", quip: "Bắn tỉa từ rất xa, phát nào cũng đúng pha." },
+    { id: "tocxanh", name: "Abi", quip: "Con chim trên tay truyền tin nhanh hơn sóng âm." },
+  ],
+  rare: [
+    { id: "tezuka", name: "Fuji Syusuke", quip: "Ba cú phản công, bóng nào cũng dội lại như sóng phản xạ." },
+    { id: "nobara", name: "Kugisaki Nobara", quip: "Đóng một cây đinh, xung lực truyền thẳng tới mục tiêu." },
+    { id: "rukia", name: "Rukia", quip: "Một nhát chém, mọi phần tử đứng yên vì lạnh." },
+    { id: "chuuya", name: "Chuuya", quip: "Nắm trọng lực trong tay, biên độ cao bao nhiêu cũng được." },
+    { id: "howl", name: "Howl", quip: "Lâu đài đi khắp nơi, còn phần tử thì vẫn ở chỗ cũ." },
+    { id: "violet", name: "Violet", quip: "Gõ thư gửi đi rất xa, người vẫn ngồi nguyên chỗ." },
+  ],
+  epic: [
+    { id: "geto", name: "Geto Suguru", quip: "Nuốt trọn chú linh, giữ hết năng lượng lại cho mình." },
+    { id: "shinobu", name: "Shinobu", quip: "Nhẹ như cánh bướm, vậy mà năng lượng đủ hạ cả quỷ." },
+    { id: "bakugo", name: "Bakugo", quip: "Nổ một phát là sóng nén lan khắp phòng." },
+    { id: "mikasa", name: "Mikasa", quip: "Lướt trên dây căng, nhanh hơn cả sóng truyền." },
+    { id: "dazai", name: "Dazai", quip: "Chạm nhẹ một cái là triệt tiêu, như hai sóng ngược pha." },
+  ],
+  legendary: [
+    { id: "itachi", name: "Itachi", quip: "Nhìn một cái là cả đội lạc pha." },
+    { id: "naruto", name: "Naruto", quip: "Phân thân khắp sân, năng lượng truyền đi mãi không hết." },
+    { id: "levi", name: "Levi", quip: "Xoay tròn ở biên độ cực đại, quét sạch đáp án sai." },
+  ],
+  trap: [
+    { id: "tomie", name: "Tomie", quip: "Mất đi bao nhiêu lần cũng quay lại, y như một chu kì." },
+    { id: "reze", name: "Reze", quip: "Cười rất hiền, còn quả bom thì đang đếm ngược." },
+    { id: "yumeko", name: "Yumeko", quip: "Cô ấy vừa đặt cược bằng lượt quay của đội." },
+    { id: "codau", name: "Osaragi", quip: "Không một âm thanh nào đi qua được tấm mạng." },
+  ],
+  mystery: [
+    { id: "amuro", name: "Amuro Tooru", quip: "Ba danh tính cùng lúc, không ai biết pha thật của anh." },
+    { id: "nigou", name: "Nigou", quip: "Ngủ say trên quả bóng, phần thưởng giấu dưới bụng." },
+  ],
+};
+const charPool = {};
+function drawChar(tier) { if (!charPool[tier] || !charPool[tier].length) charPool[tier] = shuffle(CHARS[tier]); return charPool[tier].pop(); }
+const ORDER = ["common", "rare", "epic", "legendary", "trap", "mystery"];
+const BASE = { common: 34, rare: 26, epic: 15, legendary: 5, trap: 10, mystery: 10 };
+const PITY_STEP = 3, PITY_MAX = 24;
+
+const TRAPS = [
+  "Đội vừa rơi vào chân không. Sóng âm không truyền được, MC không nghe thấy đáp án nào cả.",
+  "Phần tử chỉ dao động tại chỗ. Lượt này đội cũng đứng yên tại chỗ.",
+  "Bạn nén lò xo quá tay. Lò xo bật lại và lấy mất lượt của đội.",
+  "Bass đánh quá mạnh, cả đội không nghe được câu hỏi.",
+  "Phao vẫn ở nguyên chỗ cũ. Chỉ có lượt của đội là trôi đi.",
+];
+const RIGHT = [
+  "Biên độ niềm vui tăng gấp đôi, năng lượng tăng gấp bốn.",
+  "Đáp án này cùng pha với sách giáo khoa.",
+  "Năng lượng đã truyền tới bảng điểm.",
+  "Cả lớp vừa dao động theo sự ngưỡng mộ.",
+];
+const WRONG = [
+  "Đừng buồn, điểm của đội chỉ dao động quanh vị trí cân bằng.",
+  "Đáp án đi rất xa, nhưng không mang theo điểm nào.",
+  "Lệch pha đúng π so với đáp án.",
+  "Sóng đã đi qua, đội vẫn ở chỗ cũ.",
+];
+const MYSTERY = [
+  { label: "+2 điểm", pts: 2 },
+  { label: "+6 điểm", pts: 6 },
+  { label: "Jackpot +12 điểm", pts: 12 },
+  { label: "Thêm 1 lượt quay", spin: 1 },
+  { label: "Khiên chân không", shield: true },
+  { label: "Một tràng pháo tay của cả lớp", pts: 0, note: "Năng lượng đã truyền đi, điểm thì không." },
+];
+const POWERS = {
+  x2:     { name: "Cộng hưởng", text: "Câu tiếp theo của đội được nhân đôi điểm." },
+  shield: { name: "Khiên chân không", text: "Bẫy không truyền qua chân không. Chặn Trap kế tiếp và trả lại lượt." },
+  spin:   { name: "Nguồn sóng mới", text: "Đội được thêm 1 lượt quay." },
+  steal:  { name: "Hút năng lượng", text: "Lấy 5 điểm từ một đội khác. Đội đó vẫn ngồi yên tại chỗ.", target: true },
+  cancel: { name: "Giao thoa triệt tiêu", text: "Xoá 1 lượt quay của một đội khác.", target: true },
+};
+const DEFAULT_NAMES = ["Đội Sóng Ngang", "Đội Sóng Dọc", "Đội Lò Xo", "Đội Màng Nhĩ", "Đội Bass", "Đội Phao Câu"];
+
+/* ============ TRẠNG THÁI ============ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = ms => new Promise(r => setTimeout(r, calm ? ms * .25 : ms));
+/* hold giống wait nhưng MC bấm Space hoặc chạm màn hình là bỏ qua được */
+let skip = false, skipNow = null;
+const hold = ms => skip ? Promise.resolve() : new Promise(r => { const id = setTimeout(r, calm ? ms * .25 : ms); skipNow = () => { clearTimeout(id); r(); }; });
+function skipAnim() { skip = true; if (skipNow) skipNow(); }
+
+let S = freshGame(DEFAULT_NAMES.slice(0, 4), 3);
+let phase = "idle", primary = null, sound = true;
+const pools = {};
+
+function freshGame(names, spins) {
+  return { teams: names.map(n => ({ name: n, score: 0, spins, x2: false, shield: false })), cur: 0, pity: 0, spinsEach: spins, log: [] };
+}
+function save() { try { localStorage.setItem("gacha-song-4doi", JSON.stringify(S)); } catch (e) {} }
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem("gacha-song-4doi"));
+    if (d && d.teams && d.teams.length >= 2 && d.teams.some(t => t.spins > 0)) S = d;
+  } catch (e) {}
+}
+function draw(tier) {
+  if (!pools[tier] || !pools[tier].length) pools[tier] = shuffle(BANK[tier]);
+  return pools[tier].pop();
+}
+function rates() {
+  const r = { ...BASE };
+  r.legendary += S.pity; r.common -= S.pity;
+  return r;
+}
+function roll() {
+  const r = rates(); let x = Math.random() * 100;
+  for (const t of ORDER) { x -= r[t]; if (x < 0) return t; }
+  return "common";
+}
+function addLog(t) { S.log.unshift(t); S.log = S.log.slice(0, 4); }
+
+/* ============ HIỂN THỊ ============ */
+function render() {
+  const team = S.teams[S.cur];
+  $("teams").innerHTML = S.teams.map((t, i) => `
+    <div class="team ${i === S.cur ? "on" : ""} ${t.spins ? "" : "out"}">
+      <button class="nm" type="button" data-rename title="Đổi tên đội">${esc(t.name)}</button>
+      <div class="sc">${t.score}</div>
+      <div class="pips" aria-label="Còn ${t.spins} lượt">${"<i class='pip'></i>".repeat(t.spins)}${t.spins ? "" : "Hết lượt"}
+        ${t.x2 ? "<span class='buff'>×2</span>" : ""}${t.shield ? "<span class='buff'>Khiên</span>" : ""}</div>
+      <div class="adj"><button type="button" data-adj="${i}:-1" aria-label="Trừ 1 điểm của ${esc(t.name)}">−1</button><button type="button" data-adj="${i}:1" aria-label="Cộng 1 điểm cho ${esc(t.name)}">+1</button></div>
+    </div>`).join("");
+  const r = rates();
+  $("rates").innerHTML = ORDER.map(k => {
+    const t = TIERS[k];
+    const reward = k === "trap" ? "Mất lượt" : k === "mystery" ? "???" : k === "legendary" ? "10đ + quyền năng" : t.pts + "đ";
+    return `<tr><td><i class="dot" style="--c:${t.hex}"></i>${t.name}</td><td>${reward}</td><td>${r[k]}%</td></tr>`;
+  }).join("");
+  $("log").innerHTML = S.log.length ? S.log.map(l => `<li>${esc(l)}</li>`).join("") : "<li>Máy đang chờ đội đầu tiên.</li>";
+  $("turnName").textContent = team.name;
+  $("turnLabel").textContent = `Đến lượt · còn ${team.spins} lượt quay`;
+  $("btnSpin").disabled = phase !== "idle";
+}
+function overlay(html) { orbStop(); const o = $("ov"); o.classList.remove("drop"); o.innerHTML = html; o.hidden = false; const f = o.querySelector(".go:not(.ghost)"); if (f) f.focus({ preventScroll: true }); }
+function closeOverlay() { orbStop(); $("ov").hidden = true; $("ov").innerHTML = ""; refill(); }
+
+/* ============ LUỒNG CHƠI ============ */
+async function spin() {
+  if (phase !== "idle") return;
+  const team = S.teams[S.cur];
+  if (team.spins <= 0) return;
+  phase = "spin"; skip = false; primary = skipAnim; audio();
+  team.spins--;
+  const tier = roll();
+  S.pity = tier === "legendary" ? 0 : Math.min(PITY_MAX, S.pity + PITY_STEP);
+  save(); render();
+  W.target = 1.7; W.speed = 15; W.flicker = true;
+  const ticks = setInterval(() => tone(300 + Math.random() * 500, .04, "square", .05), 95);
+  await hold(1000);
+  clearInterval(ticks);
+  W.target = 1; W.speed = 2.2; W.flicker = false;
+  await reveal(tier, team);
+}
+
+/* Lượt rút thăm: cầu trồi lên, hạt rơi khỏi sóng vào cầu, cầu đổi màu theo độ hiếm, cầu mở, nhân vật xuất hiện */
+async function reveal(tier, team) {
+  const t = TIERS[tier], c = drawChar(tier);
+  overlay(`<div class="reveal" style="--t:${tier === "trap" ? "#fdf3c9" : t.hex};--tx:#0e1f45">
+    <div class="cell ${tier}" id="cell"><i class="rays"></i><div class="char"><img src="img/${c.id}.jpg" alt="${c.name}"></div></div>
+    <div class="who" id="who" aria-live="polite"><span class="tag">${t.name}</span><h2 id="rvT">${c.name}</h2><p class="quip">${c.quip}</p><p id="rvP"></p><div id="rvB"></div></div>
+  </div>`);
+  $("ov").classList.add("drop");
+  orbStart();
+  to("enter", 1, 420);
+  await hold(420);
+  dropAll();
+  await hold(1850);
+  landAll();
+  $("ov").classList.remove("drop");
+  to("move", 1, 560); to("spin", 7, 900); to("glow", .85, 700);
+  await hold(560);
+  const chain = {
+    common: ["#ffffff", t.hex], rare: ["#ffffff", "#3fae9a", t.hex], epic: ["#ffffff", "#3fae9a", "#4a9be8", t.hex],
+    legendary: ["#ffffff", "#3fae9a", "#4a9be8", "#9b7bea", t.hex],
+    trap: ["#ffffff", "#4a9be8", "#9b7bea", "#f6c531", "#1a1f23"], mystery: ["#ffffff", "#4a9be8", t.hex],
+  }[tier];
+  for (let i = 0; i < chain.length && !skip; i++) {
+    O.col = chain[i]; O.pulse = 1; to("shake", (i + 1) / chain.length, 280);
+    tone(330 * Math.pow(1.26, i), .16, "triangle", .13);
+    await hold(i === chain.length - 1 ? 560 : 400);
+  }
+  O.col = chain[chain.length - 1];
+  orbOpen();
+  $("cell").classList.add("open");
+  $("who").classList.add("on");
+
+  if (tier === "trap") {
+    fanfare("trap");
+    if (team.shield) {
+      team.shield = false; team.spins++;
+      addLog(`${team.name}: Khiên chặn Trap`);
+      $("rvP").textContent = "Khiên chân không chặn bẫy! Đội được trả lại lượt quay.";
+      S.keep = true;
+    } else {
+      addLog(`${team.name}: dính Trap`);
+      $("rvP").textContent = pick(TRAPS);
+    }
+    save(); render();
+    phase = "reveal";
+    $("rvB").innerHTML = `<button class="go" type="button" id="go">Tiếp tục</button>`;
+    primary = nextTurn; $("go").onclick = () => primary && primary(); $("go").focus({ preventScroll: true });
+    return;
+  }
+  fanfare(tier);
+  burst(t.hex, { legendary: 140, epic: 60 }[tier] || 24, O.x, O.y);
+  $("rvP").textContent = tier === "mystery" ? "Không ai biết phần thưởng là gì cho đến khi trả lời xong." : `${t.vi}, ${t.pts} điểm${tier === "legendary" ? " và một quyền năng" : ""}${team.x2 ? ", đang được nhân đôi" : ""}.`;
+  phase = "reveal";
+  $("rvB").innerHTML = `<button class="go" type="button" id="go">Mở câu hỏi</button>`;
+  primary = () => question(tier); $("go").onclick = () => primary && primary(); $("go").focus({ preventScroll: true });
+}
+
+let Q = null, timer = null;
+function question(tier) {
+  const team = S.teams[S.cur];
+  const real = tier === "mystery" ? pick(["common", "rare", "rare", "epic"]) : tier;
+  const [text, opts, why] = draw(real);
+  const order = shuffle(opts.map((o, i) => ({ o, ok: i === 0 })));
+  const t = TIERS[tier];
+  Q = { tier, why, order, left: t.time, total: t.time, paused: false, done: false, reward: tier === "mystery" ? pick(MYSTERY) : null };
+  phase = "question"; primary = null;
+  const pts = tier === "mystery" ? "Phần thưởng: ???" : `${t.pts * (team.x2 ? 2 : 1)} điểm${team.x2 ? " (×2)" : ""}`;
+  overlay(`<div class="panel" style="--t:${t.hex}">
+    <div class="ph ${tier === "trap" ? "" : "dk"}"><b>${t.name} · ${pts}</b><span>${esc(team.name)}</span><span class="time" id="sec">${t.time}</span></div>
+    <div class="tbar"><i id="bar"></i></div>
+    <div class="body">
+      <p class="q">${esc(text)}</p>
+      <div class="opts">${order.map((x, i) => `<button class="opt" type="button" data-i="${i}"><b>${"ABCD"[i]}.</b><span>${esc(x.o)}</span></button>`).join("")}</div>
+      <div class="after" id="after" hidden></div>
+      <div class="row" id="foot"><button class="go ghost" type="button" id="pause">Tạm dừng</button></div>
+    </div></div>`);
+  $("pause").onclick = () => { Q.paused = !Q.paused; $("pause").textContent = Q.paused ? "Chạy tiếp" : "Tạm dừng"; };
+  document.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(+b.dataset.i));
+  clearInterval(timer);
+  let last = performance.now();
+  timer = setInterval(() => {
+    const now = performance.now(), dt = (now - last) / 1000; last = now;
+    if (Q.paused || Q.done) return;
+    const before = Math.ceil(Q.left);
+    Q.left = Math.max(0, Q.left - dt);
+    const s = Math.ceil(Q.left);
+    $("sec").textContent = s;
+    $("bar").style.transform = `scaleX(${Q.left / Q.total})`;
+    if (s !== before && s <= 5 && s > 0) tone(880, .07, "square", .07);
+    if (Q.left <= 0) answer(-1);
+  }, 100);
+}
+
+async function answer(i) {
+  if (!Q || Q.done) return;
+  Q.done = true; clearInterval(timer);
+  const team = S.teams[S.cur];
+  const btns = [...document.querySelectorAll(".opt")];
+  btns.forEach(b => b.disabled = true);
+  $("pause").hidden = true;
+  if (i >= 0) { btns[i].classList.add("pick"); for (let k = 0; k < 6; k++) { tone(130, .05, "square", .06); await wait(150); } }
+  const correct = i >= 0 && Q.order[i].ok;
+  btns.forEach((b, k) => { b.classList.remove("pick"); if (Q.order[k].ok) b.classList.add("right"); else if (k === i) b.classList.add("wrong"); else b.classList.add("dim"); });
+  const t = TIERS[Q.tier];
+  let line = "", gained = 0;
+  const mult = team.x2 ? 2 : 1;
+  if (Q.tier === "mystery") {
+    const r = Q.reward;
+    if (correct) {
+      gained = (r.pts || 0) * mult; team.score += gained;
+      if (r.spin) team.spins += r.spin;
+      if (r.shield) team.shield = true;
+      line = `Phần thưởng bí ẩn: ${r.label}${r.pts && mult > 1 ? ", nhân đôi thành " + gained + " điểm" : ""}. ${r.note || ""}`;
+    } else line = `Phần thưởng vừa đánh rơi: ${r.label}.`;
+  } else if (correct) {
+    gained = t.pts * mult; team.score += gained;
+    line = `+${gained} điểm cho ${team.name}.`;
+  } else line = i < 0 ? "Hết giờ, đội không có điểm." : "Đội không có điểm ở lượt này.";
+  team.x2 = false;
+  addLog(`${team.name}: ${t.name}, ${correct ? (gained ? "+" + gained + "đ" : "đúng") : "sai"}`);
+  save(); render();
+  fanfare(correct ? "right" : "wrong");
+  if (correct) burst(t.hex, Q.tier === "legendary" ? 160 : 50);
+  const after = $("after"); after.hidden = false;
+  after.innerHTML = `<h3 class="${correct ? "yes" : "no"}">${correct ? "Chính xác!" : i < 0 ? "Hết giờ!" : "Chưa đúng!"}</h3>
+    <p><b>${esc(line)}</b></p><p>${esc(Q.why)}</p><p class="mc">${esc(pick(correct ? RIGHT : WRONG))}</p>`;
+  const power = correct && Q.tier === "legendary";
+  $("foot").innerHTML = `<button class="go" type="button" id="go">${power ? "Chọn quyền năng" : "Tiếp tục"}</button>`;
+  phase = "result"; primary = power ? choosePower : nextTurn;
+  $("go").onclick = () => primary && primary(); $("go").focus({ preventScroll: true });
+  $("go").scrollIntoView({ block: "nearest" });
+}
+
+function choosePower() {
+  const team = S.teams[S.cur];
+  const others = S.teams.filter(t => t !== team);
+  const keys = Object.keys(POWERS).filter(k => (k !== "cancel" || others.some(t => t.spins > 0)) && (k !== "steal" || others.some(t => t.score > 0)));
+  const hand = shuffle(keys).slice(0, 3);
+  phase = "power"; primary = null;
+  overlay(`<div class="panel" style="--t:${TIERS.legendary.hex}">
+    <div class="ph dk"><b>Quyền năng Legendary</b><span>${esc(team.name)}</span></div>
+    <div class="body"><p class="q">Chọn một quyền năng</p>
+    <div class="powers">${hand.map(k => `<button class="power" type="button" data-p="${k}"><b>${POWERS[k].name}</b><span>${POWERS[k].text}</span></button>`).join("")}</div></div></div>`);
+  document.querySelectorAll(".power").forEach(b => b.onclick = () => usePower(b.dataset.p));
+}
+function usePower(k) {
+  const team = S.teams[S.cur], p = POWERS[k];
+  if (p.target) {
+    const list = S.teams.map((t, i) => ({ t, i })).filter(x => x.t !== team && (k === "steal" ? x.t.score > 0 : x.t.spins > 0));
+    overlay(`<div class="panel" style="--t:${TIERS.legendary.hex}">
+      <div class="ph dk"><b>${p.name}</b><span>${esc(team.name)}</span></div>
+      <div class="body"><p class="q">Chọn đội mục tiêu</p>
+      <div class="powers">${list.map(x => `<button class="power" type="button" data-t="${x.i}"><b>${esc(x.t.name)}</b><span>${x.t.score} điểm, còn ${x.t.spins} lượt</span></button>`).join("")}</div></div></div>`);
+    document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
+      const v = S.teams[+b.dataset.t];
+      if (k === "steal") { const n = Math.min(5, v.score); v.score -= n; team.score += n; addLog(`${team.name} hút ${n}đ của ${v.name}`); }
+      else { v.spins--; addLog(`${team.name} triệt tiêu 1 lượt của ${v.name}`); }
+      fanfare("legendary"); save(); nextTurn();
+    });
+    return;
+  }
+  if (k === "x2") team.x2 = true;
+  if (k === "shield") team.shield = true;
+  if (k === "spin") team.spins++;
+  addLog(`${team.name} nhận ${p.name}`);
+  fanfare("right"); save(); nextTurn();
+}
+
+function nextTurn() {
+  closeOverlay(); primary = spin; phase = "idle";
+  if (!S.teams.some(t => t.spins > 0)) return finale();
+  if (S.keep) { S.keep = false; }
+  else {
+    let i = S.cur;
+    do { i = (i + 1) % S.teams.length; } while (S.teams[i].spins <= 0);
+    S.cur = i;
+  }
+  save(); render();
+}
+
+function finale() {
+  phase = "end"; render();
+  const list = S.teams.slice().sort((a, b) => b.score - a.score);
+  const titles = ["Biên độ cực đại", "Cùng pha với chiến thắng", "Vẫn còn dao động", "Vị trí cân bằng", "Lệch pha nhẹ", "Sóng đã đi qua"];
+  burst("#f6c531", 220); fanfare("legendary");
+  overlay(`<div class="panel" style="--t:var(--sky)">
+    <div class="ph"><b>Kết quả chung cuộc</b></div>
+    <div class="body"><ol class="rank">${list.map((t, i) => `<li><span>${i + 1}</span><span>${esc(t.name)}<em>${titles[Math.min(i, titles.length - 1)]}</em></span><span class="sc">${t.score}đ</span></li>`).join("")}</ol>
+    <div class="row"><button class="go" type="button" id="go">Chơi lại</button></div></div></div>`);
+  primary = restart; $("go").onclick = restart;
+}
+function restart() {
+  S = freshGame(S.teams.map(t => t.name), S.spinsEach);
+  closeOverlay(); phase = "idle"; primary = spin; save(); render();
+}
+
+/* ============ THIẾT LẬP ============ */
+function openSetup() {
+  if (phase !== "idle") return;
+  phase = "setup"; primary = null;
+  let count = S.teams.length, spins = S.spinsEach;
+  const names = S.teams.map(t => t.name).concat(DEFAULT_NAMES.slice(S.teams.length));
+  overlay(`<div class="panel" style="--t:var(--ink-2)">
+    <div class="ph"><b>Thiết lập</b></div>
+    <div class="body set">
+      <div class="chips" id="cnt"></div><div class="chips" id="spn"></div><div id="nms" style="display:flex;flex-direction:column;gap:6px"></div>
+      <details><summary>Xem ngân hàng câu hỏi và đáp án</summary><div class="bank">${
+        ["common", "rare", "epic", "legendary"].map(k => `<h4>${TIERS[k].name} (${BANK[k].length} câu)</h4>` + BANK[k].map((q, i) => `<p>${i + 1}. ${esc(q[0])} <i>${esc(q[1][0])}</i></p>`).join("")).join("")
+      }</div></details>
+      <div class="row"><button class="go ghost" type="button" id="end">Kết thúc game ngay</button><button class="go ghost" type="button" id="cancel">Đóng</button><button class="go" type="button" id="apply">Áp dụng và chơi lại</button></div>
+    </div></div>`);
+  const chips = () => {
+    $("cnt").innerHTML = "Số đội: " + [2, 3, 4, 5, 6].map(n => `<button class="chip" type="button" aria-pressed="${n === count}" data-c="${n}">${n}</button>`).join("");
+    $("spn").innerHTML = "Lượt quay mỗi đội: " + [1, 2, 3].map(n => `<button class="chip" type="button" aria-pressed="${n === spins}" data-s="${n}">${n}</button>`).join("");
+    $("nms").innerHTML = names.slice(0, count).map((n, i) => `<label for="nm${i}">Đội ${i + 1}<input type="text" id="nm${i}" maxlength="28" value="${esc(n)}"></label>`).join("");
+    document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { keep(); count = +b.dataset.c; chips(); });
+    document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { keep(); spins = +b.dataset.s; chips(); });
+  };
+  const keep = () => { for (let i = 0; i < count; i++) names[i] = $("nm" + i).value.trim() || DEFAULT_NAMES[i]; };
+  chips();
+  $("cancel").onclick = () => { closeOverlay(); phase = "idle"; primary = spin; render(); };
+  $("end").onclick = () => { closeOverlay(); S.teams.forEach(t => t.spins = 0); finale(); };
+  $("apply").onclick = () => { keep(); S = freshGame(names.slice(0, count), spins); closeOverlay(); phase = "idle"; primary = spin; save(); render(); };
+}
+
+function openRename() {
+  if (phase !== "idle") return;
+  phase = "setup"; primary = null;
+  overlay(`<div class="panel" style="--t:var(--ink-2)">
+    <div class="ph"><b>Đổi tên đội</b><span>Điểm và lượt quay được giữ nguyên</span></div>
+    <div class="body set">
+      <div style="display:flex;flex-direction:column;gap:6px">${S.teams.map((t, i) => `<label for="rn${i}">Đội ${i + 1}<input type="text" id="rn${i}" maxlength="28" value="${esc(t.name)}"></label>`).join("")}</div>
+      <div class="row"><button class="go ghost" type="button" id="rnCancel">Đóng</button><button class="go" type="button" id="rnSave">Lưu tên</button></div>
+    </div></div>`);
+  const close = () => { closeOverlay(); phase = "idle"; primary = spin; render(); };
+  const commit = () => { S.teams.forEach((t, i) => { t.name = $("rn" + i).value.trim() || t.name; }); save(); close(); };
+  $("rnCancel").onclick = close;
+  $("rnSave").onclick = commit;
+  $("ov").querySelectorAll("input").forEach(b => b.onkeydown = e => { if (e.key === "Enter") commit(); });
+  $("rn0").select();
+}
+
+/* ============ ÂM THANH ============ */
+let ac = null;
+function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === "suspended") ac.resume(); }
+function tone(f, d, type = "sine", vol = .1, at = 0) {
+  if (!sound || !ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+}
+function fanfare(k) {
+  const seq = {
+    common: [523, 659], rare: [523, 659, 784], epic: [523, 659, 784, 1047], mystery: [784, 622, 932],
+    legendary: [523, 659, 784, 1047, 1319, 1568], right: [659, 988], wrong: [233, 175], trap: [311, 293, 277, 233],
+  }[k] || [];
+  seq.forEach((f, i) => tone(f, k === "trap" ? .32 : .22, k === "trap" || k === "wrong" ? "sawtooth" : "triangle", .13, i * (k === "trap" ? .24 : .12)));
+}
+
+/* ============ CỬA KÍNH: SÓNG NGANG VÀ SÓNG DỌC ============ */
+const W = { amp: 1, target: 1, speed: 2.2, phase: 0, flicker: false, colors: [], pos: [], vis: [], ret: [] };
+const cv = $("wave"), g2 = cv.getContext("2d");
+const N = 15, LAMBDA = 8;
+W.vis = Array(N * 2).fill(1); W.ret = Array(N * 2).fill(0);
+function recolor() { const pool = ["common", "common", "common", "rare", "rare", "epic", "legendary", "trap", "mystery"]; W.colors = Array.from({ length: N * 2 }, () => TIERS[pick(pool)].hex); }
+recolor();
+function fit() { const r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d); g2.setTransform(d, 0, 0, d, 0, 0); }
+new ResizeObserver(fit).observe(cv); fit();
+function capsule(x, y, r, c, mark, g = g2, rot = 0) {
+  g.save(); g.translate(x, y); g.rotate(rot);
+  g.beginPath(); g.arc(0, 0, r, 0, 2 * Math.PI); g.fillStyle = "#fdf3c9"; g.fill();
+  g.beginPath(); g.arc(0, 0, r, Math.PI, 0); g.closePath(); g.fillStyle = c; g.fill();
+  g.beginPath(); g.arc(-r * .35, -r * .45, r * .2, 0, 2 * Math.PI); g.fillStyle = "rgba(255,255,255,.65)"; g.fill();
+  if (mark) { g.beginPath(); g.arc(0, 0, r + 3, 0, 2 * Math.PI); g.strokeStyle = "#fff"; g.lineWidth = 2.5; g.stroke(); }
+  g.restore();
+}
+let lastT = 0, lastColor = 0;
+function frame(ts) {
+  const dt = Math.min(.05, (ts - lastT) / 1000 || 0); lastT = ts;
+  W.amp += (W.target - W.amp) * Math.min(1, dt * 4);
+  W.phase += W.speed * dt * (calm && !W.flicker ? .25 : 1);
+  if (W.flicker && ts - lastColor > 90) { recolor(); lastColor = ts; }
+  const w = cv.clientWidth, h = cv.clientHeight;
+  g2.clearRect(0, 0, w, h);
+  const s = w / (N + 1), r = Math.min(s * .32, h * .085), y1 = h * .3, y2 = h * .77, k = 2 * Math.PI / (LAMBDA * s);
+  const a1 = h * .1 * W.amp, a2 = s * .62 * Math.min(W.amp, 1.3);
+  const midX = (Math.floor(N / 2) + 1) * s;
+  g2.setLineDash([4, 6]); g2.strokeStyle = "rgba(253,243,201,.35)"; g2.lineWidth = 1;
+  g2.beginPath(); g2.moveTo(midX, 16); g2.lineTo(midX, h * .54); g2.moveTo(10, y2 + r + 8); g2.lineTo(w - 10, y2 + r + 8); g2.stroke(); g2.setLineDash([]);
+  g2.beginPath(); for (let x = 0; x <= w; x += 4) { const y = y1 + a1 * Math.sin(W.phase - k * x); x ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.strokeStyle = "rgba(253,243,201,.5)"; g2.lineWidth = 2; g2.stroke();
+  g2.beginPath(); g2.moveTo(0, y2); g2.lineTo(w, y2); g2.stroke();
+  for (let i = 0; i < N * 2; i++) {
+    const row2 = i >= N, x = (i % N + 1) * s, wob = Math.sin(W.phase - k * x);
+    const px = row2 ? x + a2 * wob : x, py = row2 ? y2 : y1 + a1 * wob;
+    W.pos[i] = { x: px, y: py, r };
+    if (W.ret[i] && ts >= W.ret[i]) { W.vis[i] = Math.min(1, W.vis[i] + dt * 6); if (W.vis[i] === 1) W.ret[i] = 0; }
+    if (W.vis[i] > 0) capsule(px, py, r * W.vis[i], W.colors[i], i % N === Math.floor(N / 2));
+  }
+  g2.fillStyle = "#fdf3c9"; g2.textBaseline = "top";
+  g2.font = `italic 700 ${Math.max(13, Math.min(18, w / 42))}px "Times New Roman", Tinos, serif`;
+  g2.fillText("Sóng ngang: dao động ↕, truyền →", 12, 10);
+  g2.fillText("Sóng dọc: dao động ↔, truyền →", 12, Math.max(h * .53, y1 + a1 + r + 2));
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============ QUẢ CẦU RÚT THĂM ============ */
+const orbC = $("orb"), o2 = orbC.getContext("2d");
+const O = { on: false, drops: [], pile: [], enter: 0, move: 0, spin: 0, glow: 0, shake: 0, open: 0, opening: false, flash: 0, pulse: 0, sq: 0, rot: 0, col: "#ffffff", x: 0, y: 0 };
+const T = {};
+const ease = p => p * p * (3 - 2 * p), lerp = (a, b, p) => a + (b - a) * p;
+const alpha = (hex, a) => hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, "0");
+function to(k, v, ms) { T[k] = { a: O[k], b: v, t: performance.now(), d: calm || skip ? 0 : ms }; }
+
+/* Chỗ của 30 viên trong lòng cầu: xếp sole từ đáy lên, đơn vị là bán kính cầu */
+const SLOTS = [];
+for (let y = .78, row = 0; SLOTS.length < N * 2; y -= .22, row++) {
+  const half = Math.sqrt(Math.max(0, .84 * .84 - y * y));
+  for (let x = -half + (row % 2 ? .13 : 0); x <= half; x += .26) SLOTS.push({ u: x, v: y });
+}
+function orbStart() {
+  Object.assign(O, { on: true, drops: [], pile: [], enter: 0, move: 0, spin: 0, glow: 0, shake: 0, open: 0, opening: false, flash: 0, pulse: 0, sq: 0, rot: 0, col: "#ffffff" });
+  for (const k in T) delete T[k];
+  orbC.hidden = false; orbSize(); requestAnimationFrame(orbLoop);
+}
+function orbStop() { O.on = false; orbC.hidden = true; o2.clearRect(0, 0, innerWidth, innerHeight); }
+function orbSize() { const d = Math.min(devicePixelRatio || 1, 2); orbC.width = innerWidth * d; orbC.height = innerHeight * d; o2.setTransform(d, 0, 0, d, 0, 0); }
+function dropAll() {
+  const now = performance.now();
+  for (let i = 0; i < N * 2; i++) {
+    const row = i >= N ? 1 : 0;
+    /* Sóng đi từ trái sang phải nên các hạt rụng lần lượt theo chiều truyền sóng */
+    O.drops.push({ i, c: W.colors[i], t0: now + (i % N) * 72 + row * 36 + Math.random() * 24, on: false, done: false, spinOff: Math.random() * 6, slot: i });
+  }
+  O.drops.sort((a, b) => a.t0 - b.t0).forEach((d, n) => d.slot = SLOTS[n]);
+  if (calm || skip) landAll();
+}
+function landAll() {
+  O.drops.forEach(d => { if (d.done) return; d.done = true; if (!calm) { W.vis[d.i] = 0; W.ret[d.i] = 0; } O.pile.push(d); });
+}
+function refill() {
+  const now = performance.now();
+  for (let i = 0; i < N * 2; i++) if (W.vis[i] < 1 && !W.ret[i]) W.ret[i] = now + 150 + (i % N) * 60;
+  if (W.vis.some(v => v < 1)) { const keep = W.colors.map((c, i) => W.vis[i] === 1 ? c : null); recolor(); keep.forEach((c, i) => { if (c) W.colors[i] = c; }); }
+}
+function orbOpen() {
+  O.opening = true; O.flash = 1; O.pile = [];
+  to("spin", 0, 0); to("shake", 0, 0); to("open", 1, 620);
+}
+/* Nửa vỏ cầu: side -1 là nửa trên, 1 là nửa dưới */
+function shell(c, R, side) {
+  c.save();
+  c.beginPath(); c.rect(-R * 1.2, side < 0 ? -R * 1.3 : 0, R * 2.4, R * 1.3); c.clip();
+  const g = c.createRadialGradient(-R * .3, -R * .35, R * .1, 0, 0, R);
+  g.addColorStop(0, "rgba(255,255,255,.2)"); g.addColorStop(1, "rgba(150,205,212,.16)");
+  c.beginPath(); c.arc(0, 0, R, 0, 2 * Math.PI); c.fillStyle = g; c.fill();
+  c.lineWidth = Math.max(3, R * .03); c.strokeStyle = "#fdf3c9"; c.stroke();
+  c.save(); c.beginPath(); c.arc(0, 0, R, 0, 2 * Math.PI); c.clip();
+  c.fillStyle = "#f6c531"; c.fillRect(-R, side < 0 ? -R * .05 : 0, R * 2, R * .05);
+  c.restore();
+  if (side < 0) {
+    c.fillStyle = "#f6c531"; c.strokeStyle = "#0e1f45"; c.lineWidth = 3;
+    c.beginPath(); c.roundRect(-R * .3, -R * 1.09, R * .6, R * .17, R * .05); c.fill(); c.stroke();
+    c.fillStyle = "#0e1f45"; c.fillRect(-R * .2, -R * 1.04, R * .4, R * .07);
+  }
+  c.restore();
+}
+function shine(c, R) {
+  c.beginPath(); c.arc(0, 0, R * .84, Math.PI * 1.1, Math.PI * 1.42); c.strokeStyle = "rgba(255,255,255,.55)"; c.lineWidth = R * .06; c.lineCap = "round"; c.stroke();
+}
+let orbLast = 0;
+function orbLoop(ts) {
+  if (!O.on) return;
+  const now = performance.now(), dt = Math.min(.05, (now - orbLast) / 1000 || 0); orbLast = now;
+  if (orbC.width !== Math.round(innerWidth * Math.min(devicePixelRatio || 1, 2))) orbSize();
+  for (const k in T) { const q = T[k], p = q.d ? Math.min(1, (now - q.t) / q.d) : 1; O[k] = lerp(q.a, q.b, ease(p)); if (p === 1) delete T[k]; }
+  O.rot += O.spin * dt; O.pulse *= .9; O.sq *= .84; O.flash = Math.max(0, O.flash - dt * 2.2);
+
+  const cell = $("cell"); if (!cell) return orbStop();
+  const b = cell.getBoundingClientRect(), g = cv.getBoundingClientRect();
+  const heroR = Math.min(b.width, b.height) * .44, homeR = Math.min(heroR * .74, innerHeight * .13);
+  const homeX = Math.max(homeR + 8, Math.min(innerWidth - homeR - 8, g.left + g.width / 2)), homeY = innerHeight - homeR - 14;
+  const R = lerp(homeR, heroR, O.move);
+  const x = lerp(homeX, b.left + b.width / 2, O.move);
+  const y = lerp(homeY, b.top + b.height / 2, O.move) + (1 - O.enter) * (homeR * 3);
+  const sx = O.shake * R * .045 * Math.sin(now * .05), tilt = O.shake * .1 * Math.sin(now * .037);
+  O.x = x; O.y = y;
+  const c = o2;
+  c.clearRect(0, 0, innerWidth, innerHeight);
+
+  /* Quầng sáng theo độ hiếm */
+  if (O.glow > 0 && O.open < 1) {
+    const hr = R * (1.7 + O.pulse * .35), h = c.createRadialGradient(x, y, R * .6, x, y, hr);
+    h.addColorStop(0, alpha(O.col, O.glow * .75 * (1 - O.open))); h.addColorStop(1, alpha(O.col, 0));
+    c.fillStyle = h; c.beginPath(); c.arc(x, y, hr, 0, 2 * Math.PI); c.fill();
+  }
+  if (!O.opening) {
+    c.save(); c.translate(x + sx, y); c.rotate(tilt); c.scale(1 + O.sq * .035, 1 - O.sq * .05);
+    shell(c, R, -1); shell(c, R, 1);
+    const cos = Math.cos(O.rot), sin = Math.sin(O.rot);
+    O.pile.forEach(d => { const u = d.slot.u * cos - d.slot.v * sin, v = d.slot.u * sin + d.slot.v * cos; capsule(u * R, v * R, R * .12, d.c, false, c, O.rot + d.spinOff); });
+    if (O.glow > 0) {
+      const f = c.createRadialGradient(0, 0, 0, 0, 0, R);
+      f.addColorStop(0, alpha(O.col, O.glow)); f.addColorStop(.8, alpha(O.col, O.glow * .8)); f.addColorStop(1, alpha(O.col, O.glow * .25));
+      c.fillStyle = f; c.beginPath(); c.arc(0, 0, R * .97, 0, 2 * Math.PI); c.fill();
+    }
+    shine(c, R);
+    c.restore();
+  } else {
+    const e = ease(O.open), a = 1 - Math.max(0, (O.open - .5) / .5);
+    c.globalAlpha = a;
+    c.save(); c.translate(x, y - R * 1.25 * e); c.rotate(-.55 * e); shell(c, R, -1); shine(c, R); c.restore();
+    c.save(); c.translate(x, y + R * .95 * e); c.rotate(.22 * e); shell(c, R, 1); c.restore();
+    c.globalAlpha = 1;
+    if (O.flash > 0) {
+      const fr = R * (1 + (1 - O.flash) * 1.9), f = c.createRadialGradient(x, y, 0, x, y, fr);
+      f.addColorStop(0, `rgba(255,255,255,${O.flash})`); f.addColorStop(.5, alpha(O.col === "#1a1f23" ? "#fdf3c9" : O.col, O.flash * .8)); f.addColorStop(1, alpha(O.col, 0));
+      c.fillStyle = f; c.beginPath(); c.arc(x, y, fr, 0, 2 * Math.PI); c.fill();
+    }
+  }
+
+  /* Hạt rơi: bật khỏi sóng, bay qua miệng cầu, rồi rớt xuống chỗ của mình trong lòng cầu */
+  if (!O.opening) {
+    const entryX = x, entryY = y - R * 1.02, gB = cv.getBoundingClientRect();
+    O.drops.forEach(d => {
+      if (d.done || now < d.t0) return;
+      if (!d.on) { const p = W.pos[d.i]; d.on = true; d.sx = gB.left + p.x; d.sy = gB.top + p.y; d.r0 = p.r; W.vis[d.i] = 0; W.ret[d.i] = 0; }
+      const p = (now - d.t0) / 720;
+      if (p >= 1) {
+        d.done = true; O.pile.push(d); O.sq = 1;
+        tone(360 + O.pile.length * 19, .05, "triangle", .06);
+        return;
+      }
+      const e = Math.pow(p, 1.7), cut = .74, r = lerp(d.r0, R * .12, e);
+      let px, py;
+      if (e < cut) {
+        const q = e / cut, mx = lerp(d.sx, entryX, .72), my = Math.min(d.sy - 46, entryY - 130);
+        px = (1 - q) * (1 - q) * d.sx + 2 * q * (1 - q) * mx + q * q * entryX;
+        py = (1 - q) * (1 - q) * d.sy + 2 * q * (1 - q) * my + q * q * entryY;
+      } else {
+        const q = (e - cut) / (1 - cut);
+        px = lerp(entryX, x + d.slot.u * R, q); py = lerp(entryY, y + d.slot.v * R, q);
+      }
+      capsule(px, py, r, d.c, false, c, p * 9 + d.spinOff);
+    });
+  }
+  if (O.open >= 1) return orbStop();
+  requestAnimationFrame(orbLoop);
+}
+
+/* ============ PHÁO GIẤY ============ */
+const fx = $("fx"), f2 = fx.getContext("2d"); let bits = [], fxOn = false;
+function burst(color, n, x = innerWidth / 2, y = innerHeight * .4) {
+  if (calm) return;
+  if (!fxOn) { fx.width = innerWidth; fx.height = innerHeight; }
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 2 * Math.PI, v = 3 + Math.random() * 9;
+    bits.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3, r: 3 + Math.random() * 5, c: Math.random() < .6 ? color : "#fdf3c9", life: 60 + Math.random() * 50 });
+  }
+  if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); }
+}
+function fxLoop() {
+  f2.clearRect(0, 0, fx.width, fx.height);
+  bits = bits.filter(b => b.life-- > 0);
+  bits.forEach(b => { b.vy += .22; b.x += b.vx; b.y += b.vy; f2.fillStyle = b.c; f2.beginPath(); f2.arc(b.x, b.y, b.r, 0, 2 * Math.PI); f2.fill(); });
+  if (bits.length) requestAnimationFrame(fxLoop); else { fxOn = false; f2.clearRect(0, 0, fx.width, fx.height); }
+}
+
+/* ============ NÚT VÀ PHÍM ============ */
+$("btnSpin").onclick = spin;
+$("ov").addEventListener("click", () => { if (phase === "spin") skipAnim(); });
+$("btnSet").onclick = openSetup;
+$("btnRename").onclick = openRename;
+$("btnSound").onclick = () => { sound = !sound; $("btnSound").textContent = "Âm thanh: " + (sound ? "bật" : "tắt"); audio(); };
+$("btnFull").onclick = () => { const d = document; if (d.fullscreenElement) d.exitFullscreen(); else { const p = d.documentElement.requestFullscreen && d.documentElement.requestFullscreen(); if (p) p.catch(() => {}); } };
+$("teams").addEventListener("click", e => {
+  if (e.target.closest("[data-rename]")) return openRename();
+  const b = e.target.closest("[data-adj]"); if (!b) return;
+  const [i, d] = b.dataset.adj.split(":").map(Number);
+  S.teams[i].score = Math.max(0, S.teams[i].score + d); save(); render();
+});
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.repeat) return;
+  if (phase === "question" && !Q.done) {
+    const i = "abcd".indexOf(e.key.toLowerCase()), n = "1234".indexOf(e.key);
+    if (i >= 0 || n >= 0) { e.preventDefault(); answer(i >= 0 ? i : n); }
+    return;
+  }
+  if ([" ", "Enter", "PageDown", "ArrowRight"].includes(e.key) && primary) { e.preventDefault(); primary(); }
+});
+Object.values(CHARS).flat().forEach(c => { new Image().src = `img/${c.id}.jpg`; });
+load();
+primary = spin;
+render();
+</script>
+
+</body></html>
